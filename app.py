@@ -22,7 +22,10 @@ with graph.as_default():
     base_model = VGG16(weights='imagenet', include_top=False, input_tensor=input_tensor)
     added_layer = Flatten()(base_model.output)
     model = Model(inputs=base_model.input, outputs=added_layer)
-reducer = joblib.load('./models/umap_model.sav')
+reducer1 = joblib.load('./models/e_umap_model.sav')
+reducer2 = joblib.load('./models/c_umap_model.sav')
+reducer3 = joblib.load('./models/pca_model.sav')
+reducer4 = joblib.load('./models/lda_model.sav')
 classifier = joblib.load('./models/randumforest_model.sav')
 label_dict = {}
 
@@ -61,17 +64,26 @@ def predict_core(path_list):
     with graph.as_default():
         features = model.predict(data)
     print(features)
-    reduced_features = reducer.transform(features)
+
+    features1 = reducer1.transform(features)
+    features2 = reducer2.transform(features)
+    features3 = reducer3.transform(features)
+    features4 = reducer4.transform(features)
+    reduced_features = np.concatenate([features1, features2, features3, features4], 1)
     print(reduced_features)
-    pred = classifier.predict(reduced_features)
+
+    pred = classifier.predict_proba(reduced_features)
     print(pred)
 
     result = []
     for idx in range(len(data)):
+        order = pred[idx].argsort()
+        cl1 = order[-1]
+        cl2 = order[-2]
         item = {
             'name': names[idx],
-            'class1': (label_dict[pred[0]], str(pred[0])),
-            'class2': (label_dict[pred[0]], str(pred[0])),
+            'class1': (label_dict[cl1], str(pred[idx][cl1])),
+            'class2': (label_dict[cl2], str(pred[idx][cl2])),
         }
         result.append(item)
     print(result)

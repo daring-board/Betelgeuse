@@ -17,8 +17,8 @@ if __name__=="__main__":
     dim = 3
 
     features = np.load('./models/features.npy')
-    # reducer = umap.UMAP(n_neighbors=5, n_components=32, metric='cosine', random_state=10)
-    reducer = PCA(n_components=dim)
+    reducer = umap.UMAP(n_neighbors=5, n_components=dim, metric='euclidean', random_state=10)
+    # reducer = PCA(n_components=dim)
     features = reducer.fit_transform(features)
 
     # モデルを保存
