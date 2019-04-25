@@ -26,7 +26,7 @@ reducer4 = None
 classifier = None
 label_dict = {}
 
-URL = 'http://127.0.0.1:5000'
+URL = 'http://127.0.0.1:5001'
 app.config['MOBILENET_URL'] = URL
 
 def classify_process():
