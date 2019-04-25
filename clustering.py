@@ -72,7 +72,7 @@ if __name__=="__main__":
 
     # clf = RFC(n_estimators=100, max_depth=3, random_state=0)
     # clf = ETC()
-    clf = GBC()
+    clf = GBC(n_estimators=20)
     clf.fit(features, l_list)
 
     # モデルを保存
