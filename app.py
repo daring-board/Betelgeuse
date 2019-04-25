@@ -61,13 +61,9 @@ def root():
         f = request.files['FILE']
         f_path = save_img(f)
         files = {'FILE': (f.filename, open(f_path, 'rb'))}
-        response = requests.post(app.config['MOBILENET_URL']+'/predict', files=files)
-        pred1 = json.loads(response.content)['data']
         pred2 = predict_core([f_path]).data.decode('utf-8')
         pred2 = json.loads(pred2)['data']
-        print(pred1)
-        print(pred2)
-        result = make_result(pred1, pred2, [f_path])
+        result = make_result(pred2, [f_path])
 
         path = os.path.join(app.config['UPLOAD_FOLDER'], f.filename)
         return render_template(
@@ -80,13 +76,12 @@ def root():
 def get_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-def make_result(x1, x2, path_list):
-    pred = (np.array(x1) + np.array(x2)) / 2
+def make_result(pred, path_list):
     names = [item.split('/')[-1] for item in path_list]
 
     result = []
     for idx in range(len(pred)):
-        order = pred[idx].argsort()
+        order = np.array(pred[idx]).argsort()
         cl1 = order[-1]
         cl2 = order[-2]
         item = {
