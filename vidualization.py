@@ -14,7 +14,7 @@ from sklearn.ensemble import ExtraTreesClassifier as ETC
 from sklearn.externals import joblib
 
 if __name__=="__main__":
-    dim = 2
+    dim = 3
 
     features = np.load('./models/features.npy')
 
@@ -35,7 +35,7 @@ if __name__=="__main__":
     nums.append(count)
     l_list = [l_dict[data[idx][1]] for idx in range(len(data))]
 
-    reducer = umap.UMAP(n_neighbors=15, n_components=dim, metric='cosine', random_state=10)
+    reducer = umap.UMAP(n_neighbors=15, n_components=dim, metric='euclidean', random_state=10)
     # reducer = PCA(n_components=dim)
     features = reducer.fit_transform(features, y=np.asarray(l_list))
 

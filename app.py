@@ -12,6 +12,7 @@ from keras.layers.core import Flatten
 from keras.applications.vgg16 import VGG16
 
 from sklearn.externals import joblib
+import hdbscan
 
 app = Flask(__name__)
 
@@ -21,23 +22,27 @@ graph1 = None
 model1 = None
 reducer1 = None
 reducer2 = None
-reducer3 = None
-reducer4 = None
 classifier = None
 label_dict = {}
+con_l_dict = {}
 
 URL = 'http://127.0.0.1:5000'
 app.config['MOBILENET_URL'] = URL
 
 def classify_process():
     global model1, graph1
-    global reducer1, reducer2, reducer3, reducer4, classifier
+    global reducer1, reducer2, classifier
     tmp_dict = {row.strip().split(',')[1]: 0 for row in open('./models/label.csv', 'r')}
     print(tmp_dict)
     count = 0
     for key in tmp_dict.keys():
-        label_dict[count] = key
+        label_dict[str(count)] = key
         count += 1
+
+    tmp = [row.strip().split(',') for row in open('./models/convert_label.csv', 'r')]
+    for item in tmp:
+        con_l_dict[item[0]] = item[1]
+    print(con_l_dict)
 
     graph1 = tf.get_default_graph()
     with graph1.as_default():
@@ -78,16 +83,19 @@ def make_result(pred, path_list):
     names = [item.split('/')[-1] for item in path_list]
 
     result = []
-    for idx in range(len(pred)):
-        order = np.array(pred[idx]).argsort()
-        cl1 = order[-1]
-        cl2 = order[-2]
+    if pred[0] == '-1':
         item = {
-            'name': names[idx],
-            'class1': (label_dict[cl1], str(pred[idx][cl1])),
-            'class2': (label_dict[cl2], str(pred[idx][cl2])),
+            'name': names[0],
+            'class1': ('unknown', str(pred[1])),
+            'class2': ('unknown', str(pred[1])),
         }
-        result.append(item)
+    else:
+        item = {
+            'name': names[0],
+            'class1': (label_dict[pred[0]], str(pred[1])),
+            'class2': (label_dict[pred[0]], str(pred[1])),
+        }
+    result.append(item)
     print(result)
     return result
 
@@ -107,19 +115,22 @@ def predict_core(path_list):
 
     with graph1.as_default():
         features = model1.predict(data)
-    print(features)
 
     features1 = reducer1.transform(features)
     features2 = reducer2.transform(features)
     reduced_features = np.concatenate([features1, features2], 1)
-    print(reduced_features)
 
-    pred = classifier.predict_proba(reduced_features)
-    print(pred)
+    pred = hdbscan.approximate_predict(classifier, reduced_features)
+    if pred[0][0] == -1:
+        pred = (str(pred[0][0]), '0')
+    else:
+        print(pred)
+        print(con_l_dict)
+        pred = (con_l_dict[str(pred[0][0])], str(pred[1][0]))
 
     return jsonify({
             'status': 'OK',
-            'data': pred.tolist()
+            'data': pred
         })
 
 def preprocess(f_list):
