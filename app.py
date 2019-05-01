@@ -49,8 +49,6 @@ def classify_process():
 
     reducer1 = joblib.load('./models/e_umap_model.sav')
     reducer2 = joblib.load('./models/c_umap_model.sav')
-    reducer3 = joblib.load('./models/pca_model.sav')
-    reducer4 = joblib.load('./models/lda_model.sav')
     classifier = joblib.load('./models/randumforest_model.sav')
 
 @app.route('/', methods = ["GET", "POST"])
@@ -103,7 +101,7 @@ def save_img(f):
 
 def predict_core(path_list):
     global model1, graph1
-    global reducer1, reducer2, reducer3, reducer4, classifier
+    global reducer1, reducer2, classifier
     data = preprocess(path_list)
     names = [item.split('/')[-1] for item in path_list]
 
@@ -113,9 +111,7 @@ def predict_core(path_list):
 
     features1 = reducer1.transform(features)
     features2 = reducer2.transform(features)
-    features3 = reducer3.transform(features)
-    features4 = reducer4.transform(features)
-    reduced_features = np.concatenate([features1, features2, features3, features4], 1)
+    reduced_features = np.concatenate([features1, features2], 1)
     print(reduced_features)
 
     pred = classifier.predict_proba(reduced_features)
