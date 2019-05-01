@@ -14,12 +14,30 @@ from sklearn.ensemble import ExtraTreesClassifier as ETC
 from sklearn.externals import joblib
 
 if __name__=="__main__":
-    dim = 3
+    dim = 2
 
     features = np.load('./models/features.npy')
-    reducer = umap.UMAP(n_neighbors=5, n_components=dim, metric='euclidean', random_state=10)
+
+    data = [row.strip().split(',') for row in open('./models/label.csv', 'r', encoding='utf8')]
+    l_dict = {row[1]: 0 for row in data}
+    count = 0
+    for key in l_dict.keys():
+        l_dict[key] = count
+        count += 1
+    nums = []
+    prev, count = data[0][1], 0
+    for row in data:
+        if row[1] != prev:
+            nums.append(count)
+            prev, count = row[1], 1
+        else:
+            count += 1
+    nums.append(count)
+    l_list = [l_dict[data[idx][1]] for idx in range(len(data))]
+
+    reducer = umap.UMAP(n_neighbors=15, n_components=dim, metric='cosine', random_state=10)
     # reducer = PCA(n_components=dim)
-    features = reducer.fit_transform(features)
+    features = reducer.fit_transform(features, y=np.asarray(l_list))
 
     # モデルを保存
     filename = './models/umap_model.sav'

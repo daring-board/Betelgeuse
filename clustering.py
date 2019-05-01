@@ -38,41 +38,41 @@ if __name__=="__main__":
             f.write('%d,%d\n'%(idx, l_dict[data[idx][1]]))
     l_list = np.asarray(l_list)
 
-    reducer = umap.UMAP(n_neighbors=10, n_components=8, metric='euclidean', random_state=10)
-    features1 = reducer.fit_transform(features)
+    reducer = umap.UMAP(n_neighbors=15, n_components=8, metric='euclidean', random_state=10)
+    features1 = reducer.fit_transform(features, y=l_list)
     # モデルを保存
     filename = './models/e_umap_model.sav'
     joblib.dump(reducer, filename)
 
-    reducer = umap.UMAP(n_neighbors=10, n_components=8, metric='cosine', random_state=10)
-    features2 = reducer.fit_transform(features)
+    reducer = umap.UMAP(n_neighbors=15, n_components=8, metric='cosine', random_state=10)
+    features2 = reducer.fit_transform(features, y=l_list)
     # モデルを保存
     filename = './models/c_umap_model.sav'
     joblib.dump(reducer, filename)
 
-    reducer = PCA(n_components=8)
-    features3 = reducer.fit_transform(features)
-    # モデルを保存
-    filename = './models/pca_model.sav'
-    joblib.dump(reducer, filename)
+    # reducer = PCA(n_components=8)
+    # features3 = reducer.fit_transform(features)
+    # # モデルを保存
+    # filename = './models/pca_model.sav'
+    # joblib.dump(reducer, filename)
 
-    reducer = LDA(n_components=8)
-    features4 = reducer.fit_transform(features, l_list)
+    # reducer = LDA(n_components=8)
+    # features4 = reducer.fit_transform(features, l_list)
     # モデルを保存
     filename = './models/lda_model.sav'
     joblib.dump(reducer, filename)
 
-    features = np.concatenate([features1, features2, features3, features4], 1)
-    # features = np.concatenate([features1, features3], 1)
+    # features = np.concatenate([features1, features2, features3, features4], 1)
+    features = np.concatenate([features1, features2], 1)
 
     print(features)
     print(len(features))
 
     np.save('./models/reduced_features.npy', features)
 
-    # clf = RFC(n_estimators=100, max_depth=3, random_state=0)
+    clf = RFC(n_estimators=100, max_depth=3, random_state=0)
     # clf = ETC()
-    clf = GBC(n_estimators=20)
+    # clf = GBC(n_estimators=20)
     clf.fit(features, l_list)
 
     # モデルを保存
