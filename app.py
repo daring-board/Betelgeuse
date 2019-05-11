@@ -116,9 +116,10 @@ def predict_core(path_list):
     with graph1.as_default():
         features = model1.predict(data)
 
-    features1 = reducer1.transform(features)
+    # features1 = reducer1.transform(features)
     features2 = reducer2.transform(features)
-    reduced_features = np.concatenate([features1, features2], 1)
+    # reduced_features = np.concatenate([features1, features2], 1)
+    reduced_features = features2
 
     pred = hdbscan.approximate_predict(classifier, reduced_features)
     if pred[0][0] == -1:
