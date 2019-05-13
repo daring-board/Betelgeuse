@@ -48,6 +48,11 @@ class DataSequence(Sequence):
             datas.append(img)
             label = f.split('/')[2].split('_')[-1]
             labels.append(label_dict[label])
+            # Augmentation image
+            for num in range(aug_time):
+                tmp = self.datagen.random_transform(img)
+                datas.append(tmp)
+                labels.append(label_dict[label])
 
         datas = np.asarray(datas)
         labels = pd.DataFrame(labels)
@@ -68,7 +73,7 @@ if __name__=="__main__":
     '''
     学習済みモデルのロード(base_model)
     '''
-    base_model = VGG16(weights='imagenet', include_top=False, input_tensor=input_tensor)
+    base_model = MobileNetV2(weights='imagenet', include_top=False, input_tensor=input_tensor)
 
     '''
     学習用画像のロード
@@ -83,7 +88,7 @@ if __name__=="__main__":
         count += 1
     train_gen = DataSequence('./train', label_dict)
 
-    added_layer = Flatten()(base_model.output)
+    added_layer = GlobalAveragePooling2D()(base_model.output)
     model = Model(inputs=base_model.input, outputs=added_layer)
 
     model.summary()
@@ -101,4 +106,36 @@ if __name__=="__main__":
     np.save('./models/features.npy', features)
     with open('./models/label.csv', 'w', encoding="utf8") as f:
         for idx in range(train_gen.length):
-            f.write('%d,%s\n'%(idx, train_gen.f_list[idx].split('/')[-2]))
+            for n in range(4):
+                f.write('%d,%s\n'%(idx, train_gen.f_list[idx].split('/')[-2]))
+
+    '''
+    カラーヒストグラム抽出
+    '''
+    datagen = train_gen.datagen
+    r_hists, g_hists, b_hists = [], [], []
+    for f in train_gen.f_list:
+        img = cv2.imread(f)
+        img = cv2.resize(img, (224, 224))
+        r_hist = cv2.calcHist([img], [0], None, [256], [0,256])
+        g_hist = cv2.calcHist([img], [1], None, [256], [0,256])
+        b_hist = cv2.calcHist([img], [2], None, [256], [0,256])
+        r_hists.append([item[0] for item in r_hist])
+        g_hists.append([item[0] for item in g_hist])
+        b_hists.append([item[0] for item in b_hist])
+        # Augmentation image
+        for num in range(3):
+            tmp = datagen.random_transform(img)
+            r_hist = cv2.calcHist([tmp], [0], None, [256], [0,256])
+            g_hist = cv2.calcHist([tmp], [1], None, [256], [0,256])
+            b_hist = cv2.calcHist([tmp], [2], None, [256], [0,256])
+            r_hists.append([item[0] for item in r_hist])
+            g_hists.append([item[0] for item in g_hist])
+            b_hists.append([item[0] for item in b_hist])
+
+    r_hists = np.asarray(r_hists)
+    np.save('./models/r_hist.npy', r_hists)
+    g_hists = np.asarray(g_hists)
+    np.save('./models/g_hist.npy', g_hists)
+    b_hists = np.asarray(b_hists)
+    np.save('./models/b_hist.npy', b_hists)

@@ -9,7 +9,9 @@ from flask import Flask, jsonify, request, render_template, redirect, url_for, s
 from keras.layers import Input
 from keras.models import Sequential, Model, load_model
 from keras.layers.core import Flatten
+from keras.layers import GlobalAveragePooling2D
 from keras.applications.vgg16 import VGG16
+from keras.applications.mobilenetv2 import MobileNetV2
 
 from sklearn.externals import joblib
 import hdbscan
@@ -22,6 +24,8 @@ graph1 = None
 model1 = None
 reducer1 = None
 reducer2 = None
+reducer3 = None
+reducer4 = None
 classifier = None
 label_dict = {}
 con_l_dict = {}
@@ -31,7 +35,7 @@ app.config['MOBILENET_URL'] = URL
 
 def classify_process():
     global model1, graph1
-    global reducer1, reducer2, classifier
+    global reducer1, reducer2, reducer3, reducer4, classifier
     tmp_dict = {row.strip().split(',')[1]: 0 for row in open('./models/label.csv', 'r')}
     print(tmp_dict)
     count = 0
@@ -48,12 +52,14 @@ def classify_process():
     with graph1.as_default():
         shape = (224, 224, 3)
         input_tensor = Input(shape=shape)
-        base_model = VGG16(weights='imagenet', include_top=False, input_tensor=input_tensor)
-        added_layer = Flatten()(base_model.output)
+        base_model = MobileNetV2(weights='imagenet', include_top=False, input_tensor=input_tensor)
+        added_layer = GlobalAveragePooling2D()(base_model.output)
         model1 = Model(inputs=base_model.input, outputs=added_layer)
 
-    reducer1 = joblib.load('./models/e_umap_model.sav')
-    reducer2 = joblib.load('./models/c_umap_model.sav')
+    reducer1 = joblib.load('./models/c_umap_model.sav')
+    reducer2 = joblib.load('./models/r_umap_model.sav')
+    reducer3 = joblib.load('./models/g_umap_model.sav')
+    reducer4 = joblib.load('./models/b_umap_model.sav')
     classifier = joblib.load('./models/randumforest_model.sav')
 
 @app.route('/', methods = ["GET", "POST"])
@@ -81,21 +87,19 @@ def get_file(filename):
 
 def make_result(pred, path_list):
     names = [item.split('/')[-1] for item in path_list]
+    pred = np.array(pred)
 
     result = []
-    if pred[0] == '-1':
+    for idx in range(len(pred)):
+        order = pred[idx].argsort()
+        cl1 = order[-1]
+        cl2 = order[-2]
         item = {
-            'name': names[0],
-            'class1': ('unknown', str(pred[1])),
-            'class2': ('unknown', str(pred[1])),
+            'name': names[idx],
+            'class1': (label_dict[str(cl1)], str(pred[idx][cl1])),
+            'class2': (label_dict[str(cl2)], str(pred[idx][cl2])),
         }
-    else:
-        item = {
-            'name': names[0],
-            'class1': (label_dict[pred[0]], str(pred[1])),
-            'class2': (label_dict[pred[0]], str(pred[1])),
-        }
-    result.append(item)
+        result.append(item)
     print(result)
     return result
 
@@ -113,25 +117,33 @@ def predict_core(path_list):
     data = preprocess(path_list)
     names = [item.split('/')[-1] for item in path_list]
 
+    r_hists, g_hists, b_hists = [], [], []
+    for f_path in path_list:
+        print(f_path)
+        img = cv2.imread(f_path)
+        img = cv2.resize(img, (224, 224))
+        r_hist = cv2.calcHist([img], [0], None, [256], [0,256])
+        g_hist = cv2.calcHist([img], [1], None, [256], [0,256])
+        b_hist = cv2.calcHist([img], [2], None, [256], [0,256])
+        r_hists.append([item[0] for item in r_hist])
+        g_hists.append([item[0] for item in g_hist])
+        b_hists.append([item[0] for item in b_hist])
+
     with graph1.as_default():
         features = model1.predict(data)
 
-    # features1 = reducer1.transform(features)
-    features2 = reducer2.transform(features)
-    # reduced_features = np.concatenate([features1, features2], 1)
-    reduced_features = features2
+    features = reducer1.transform(features)
+    r_hists = reducer2.transform(r_hists)
+    g_hists = reducer3.transform(g_hists)
+    b_hists = reducer4.transform(b_hists)
+    reduced_features = np.concatenate([features, r_hists, g_hists, b_hists], 1)
 
-    pred = hdbscan.approximate_predict(classifier, reduced_features)
-    if pred[0][0] == -1:
-        pred = (str(pred[0][0]), '0')
-    else:
-        print(pred)
-        print(con_l_dict)
-        pred = (con_l_dict[str(pred[0][0])], str(pred[1][0]))
+    pred = classifier.predict_proba(reduced_features)
+    print(pred)
 
     return jsonify({
             'status': 'OK',
-            'data': pred
+            'data': pred.tolist()
         })
 
 def preprocess(f_list):

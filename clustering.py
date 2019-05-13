@@ -41,53 +41,68 @@ if __name__=="__main__":
             f.write('%d,%d\n'%(idx, l_dict[data[idx][1]]))
     l_list = np.asarray(l_list)
 
-    # reducer = umap.UMAP(n_neighbors=15, n_components=32, metric='euclidean', random_state=10)
-    # features1 = reducer.fit_transform(features, y=l_list)
-    # # モデルを保存
-    # filename = './models/e_umap_model.sav'
-    # joblib.dump(reducer, filename)
+    r_hist = np.load('./models/r_hist.npy')
+    reducer = LDA(n_components=2)
+    r_hist = reducer.fit_transform(r_hist, y=l_list)
+    # モデルを保存
+    filename = './models/r_umap_model.sav'
+    joblib.dump(reducer, filename)
 
-    reducer = umap.UMAP(n_neighbors=15, n_components=2, metric='cosine', random_state=10)
-    features2 = reducer.fit_transform(features, y=l_list)
+    g_hist = np.load('./models/g_hist.npy')
+    reducer = LDA(n_components=2)
+    g_hist = reducer.fit_transform(g_hist, y=l_list)
+    # モデルを保存
+    filename = './models/g_umap_model.sav'
+    joblib.dump(reducer, filename)
+
+    b_hist = np.load('./models/b_hist.npy')
+    reducer = LDA(n_components=2)
+    b_hist = reducer.fit_transform(b_hist, y=l_list)
+    # モデルを保存
+    filename = './models/b_umap_model.sav'
+    joblib.dump(reducer, filename)
+
+    reducer = umap.UMAP(n_neighbors=5, n_components=6, metric='cosine', random_state=10)
+    features = reducer.fit_transform(features, y=l_list)
     # モデルを保存
     filename = './models/c_umap_model.sav'
     joblib.dump(reducer, filename)
 
-    # features = np.concatenate([features1, features2, features3, features4], 1)
-    # features = np.concatenate([features1, features2], 1)
-    features = features2
+    features = np.concatenate([features, r_hist, g_hist, b_hist], 1)
 
     print(features)
     print(len(features))
 
     np.save('./models/reduced_features.npy', features)
 
-    clf = hdbscan.HDBSCAN(min_cluster_size=10, prediction_data=True)
-    clf.fit(features)
+    # clf = hdbscan.HDBSCAN(min_cluster_size=5, prediction_data=True)
+    clf = GBC()
+    clf.fit(features, l_list)
 
     # モデルを保存
     filename = './models/randumforest_model.sav'
     joblib.dump(clf, filename)
 
-    pred = hdbscan.approximate_predict(clf, features)
+    # pred = hdbscan.approximate_predict(clf, features)
+    pred = clf.predict(features)
     # ラベル変換
-    filename = './models/convert_label.csv'
-    con_label = {idx: -1 for idx in l_dict.values()}
-    for idx in range(len(pred[0])):
-        if pred[0][idx] == -1: continue
-        if con_label[pred[0][idx]] != -1: continue 
-        con_label[pred[0][idx]] = l_list[idx]
-    print(con_label)
-    with open(filename, 'w', encoding='utf8') as f:
-        for key, value in con_label.items():
-            f.write('%d,%d\n'%(key, value))
+    # filename = './models/convert_label.csv'
+    # con_label = {idx: -1 for idx in l_dict.values()}
+    # for idx in range(len(pred[0])):
+    #     if pred[0][idx] == -1: continue
+    #     if con_label[pred[0][idx]] != -1: continue 
+    #     con_label[pred[0][idx]] = l_list[idx]
+    # print(con_label)
+    # with open(filename, 'w', encoding='utf8') as f:
+    #     for key, value in con_label.items():
+    #         f.write('%d,%d\n'%(key, value))
 
-    for idx in range(len(pred[0])):
-        print(l_list[idx], pred[0][idx], pred[1][idx])
+    # for idx in range(len(pred[0])):
+    #     print(l_list[idx], pred[0][idx], pred[1][idx])
  
-    # prob = clf.predict_proba(features)
-    # for idx in range(len(prob)):
-    #     print(pred[idx], prob[idx])
+    prob = clf.predict_proba(features)
+    for idx in range(len(prob)):
+        print(pred[idx], prob[idx])
 
     importance = clf.feature_importances_
     for idx in range(len(importance)):
