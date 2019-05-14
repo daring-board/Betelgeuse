@@ -14,7 +14,6 @@ from keras.applications.vgg16 import VGG16
 from keras.applications.mobilenetv2 import MobileNetV2
 
 from sklearn.externals import joblib
-import hdbscan
 
 app = Flask(__name__)
 
