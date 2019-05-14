@@ -81,7 +81,7 @@ def root():
 def get_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-def make_result(pred1, pred2, path_list):
+def make_result(x1, x2, path_list):
     pred = (np.array(x1) + np.array(x2)) / 2
     names = [item.split('/')[-1] for item in path_list]
 
