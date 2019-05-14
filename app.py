@@ -10,8 +10,6 @@ from keras.layers import Input
 from keras.models import Sequential, Model, load_model
 from keras.layers.core import Flatten
 from keras.layers import GlobalAveragePooling2D
-from keras.applications.vgg16 import VGG16
-from keras.applications.mobilenetv2 import MobileNetV2
 
 from sklearn.externals import joblib
 
@@ -46,7 +44,7 @@ def classify_process():
     with graph1.as_default():
         shape = (224, 224, 3)
         input_tensor = Input(shape=shape)
-        base_model = MobileNetV2(weights='imagenet', include_top=False, input_tensor=input_tensor)
+        base_model = tf.keras.applications.MobileNetV2(weights='imagenet', include_top=False, input_tensor=input_tensor)
         added_layer = GlobalAveragePooling2D()(base_model.output)
         model1 = Model(inputs=base_model.input, outputs=added_layer)
 
