@@ -30,7 +30,7 @@ classifier = None
 label_dict = {}
 con_l_dict = {}
 
-URL = 'http://127.0.0.1:5000'
+URL = 'http://127.0.0.1:5001'
 app.config['MOBILENET_URL'] = URL
 
 def classify_process():
@@ -70,9 +70,11 @@ def root():
         f = request.files['FILE']
         f_path = save_img(f)
         files = {'FILE': (f.filename, open(f_path, 'rb'))}
+        response = requests.post(app.config['MOBILENET_URL']+'/predict', files=files)
+        pred1 = json.loads(response.content)['data']
         pred2 = predict_core([f_path]).data.decode('utf-8')
         pred2 = json.loads(pred2)['data']
-        result = make_result(pred2, [f_path])
+        result = make_result(pred1, pred2, [f_path])
 
         path = os.path.join(app.config['UPLOAD_FOLDER'], f.filename)
         return render_template(
@@ -85,9 +87,9 @@ def root():
 def get_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-def make_result(pred, path_list):
+def make_result(pred1, pred2, path_list):
+    pred = (np.array(x1) + np.array(x2)) / 2
     names = [item.split('/')[-1] for item in path_list]
-    pred = np.array(pred)
 
     result = []
     for idx in range(len(pred)):
