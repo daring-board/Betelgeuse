@@ -43,11 +43,6 @@ def classify_process():
         label_dict[str(count)] = key
         count += 1
 
-    tmp = [row.strip().split(',') for row in open('./models/convert_label.csv', 'r')]
-    for item in tmp:
-        con_l_dict[item[0]] = item[1]
-    print(con_l_dict)
-
     graph1 = tf.get_default_graph()
     with graph1.as_default():
         shape = (224, 224, 3)
