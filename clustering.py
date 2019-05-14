@@ -16,8 +16,6 @@ from sklearn.ensemble import GradientBoostingClassifier as GBC
 from sklearn.svm import SVC, LinearSVC
 from sklearn.externals import joblib
 
-import hdbscan
-
 if __name__=="__main__":
     features = np.load('./models/features.npy')
     data = [row.strip().split(',') for row in open('./models/label.csv', 'r', encoding='utf8')]
