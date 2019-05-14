@@ -9,8 +9,7 @@ from keras.models import Sequential, Model
 from keras.layers import Input
 from keras.layers import GlobalAveragePooling2D, BatchNormalization
 from keras.layers.core import Dense, Dropout, Activation, Flatten
-from keras.applications.mobilenetv2 import MobileNetV2
-from keras.applications.vgg16 import VGG16
+from keras.applications.xception import Xception
 from keras import optimizers
 
 from keras.preprocessing.image import ImageDataGenerator
@@ -73,7 +72,7 @@ if __name__=="__main__":
     '''
     学習済みモデルのロード(base_model)
     '''
-    base_model = MobileNetV2(weights='imagenet', include_top=False, input_tensor=input_tensor)
+    base_model = Xception(weights='imagenet', include_top=False, input_tensor=input_tensor)
 
     '''
     学習用画像のロード
