@@ -11,6 +11,7 @@ from keras.layers import GlobalAveragePooling2D, BatchNormalization
 from keras.layers.core import Dense, Dropout, Activation, Flatten
 from keras.applications.mobilenetv2 import MobileNetV2
 from keras.applications.vgg16 import VGG16
+from keras.applications.inception_resnet_v2 import InceptionResNetV2
 from keras import optimizers
 
 from keras.preprocessing.image import ImageDataGenerator
@@ -68,7 +69,7 @@ if __name__=="__main__":
     '''
     学習済みモデルのロード(base_model)
     '''
-    base_model = VGG16(weights='imagenet', include_top=False, input_tensor=input_tensor)
+    base_model = InceptionResNetV2(weights='imagenet', include_top=False, input_tensor=input_tensor)
 
     '''
     学習用画像のロード
