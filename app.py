@@ -10,6 +10,7 @@ from keras.layers import Input
 from keras.models import Sequential, Model, load_model
 from keras.layers.core import Flatten
 from keras.layers import GlobalAveragePooling2D
+from keras.applications.mobilenet import MobileNet
 
 from sklearn.externals import joblib
 
@@ -44,7 +45,7 @@ def classify_process():
     with graph1.as_default():
         shape = (224, 224, 3)
         input_tensor = Input(shape=shape)
-        base_model = tf.keras.applications.MobileNetV2(weights='imagenet', include_top=False, input_tensor=input_tensor)
+        base_model = MobileNet(weights='imagenet', include_top=False, input_tensor=input_tensor)
         added_layer = GlobalAveragePooling2D()(base_model.output)
         model1 = Model(inputs=base_model.input, outputs=added_layer)
 
@@ -62,8 +63,8 @@ def root():
         f = request.files['FILE']
         f_path = save_img(f)
         files = {'FILE': (f.filename, open(f_path, 'rb'))}
-        response = requests.post(app.config['MOBILENET_URL']+'/predict', files=files)
-        pred1 = json.loads(response.content)['data']
+        # response = requests.post(app.config['MOBILENET_URL']+'/predict', files=files)
+        # pred1 = json.loads(response.content)['data']
         pred2 = predict_core([f_path]).data.decode('utf-8')
         pred2 = json.loads(pred2)['data']
         result = make_result(pred1, pred2, [f_path])
@@ -182,4 +183,4 @@ if __name__ == "__main__":
     t.daemon = True
     t.start()
     print(" * Flask starting server...")
-    app.run(host='0.0.0.0',port=80)
+    app.run(host='0.0.0.0', port=80, debug=True)
