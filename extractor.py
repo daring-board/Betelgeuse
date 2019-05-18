@@ -17,7 +17,7 @@ from keras.preprocessing.image import ImageDataGenerator
 
 class DataSequence(Sequence):
     def __init__(self, data_path, label):
-        self.batch = 4
+        self.batch = 5
         self.data_file_path = data_path
         self.datagen = ImageDataGenerator(
                             rotation_range=30,
@@ -34,6 +34,11 @@ class DataSequence(Sequence):
         self.label = label
         self.length = len(self.f_list)
 
+        gamma = 0.5
+        self.lookUpTable = np.zeros((256, 1), dtype = 'uint8')
+        for i in range(256):
+            self.lookUpTable[i][0] = 255 * pow(float(i) / 255, 1.0 / gamma)
+
     def __getitem__(self, idx):
         warp = self.batch
         aug_time = 3
@@ -43,16 +48,21 @@ class DataSequence(Sequence):
         # for f in random.sample(self.f_list, warp):
         for f in self.f_list[warp * idx: warp * (idx+1)]:
             img = cv2.imread(f)
-            img = cv2.resize(img, (224, 224))
-            img = img.astype(np.float32) / 255.0
+            img_src = cv2.resize(img, (224, 224))
+            img = img_src.astype(np.float32) / 255.0
             datas.append(img)
             label = f.split('/')[2].split('_')[-1]
             labels.append(label_dict[label])
+
             # Augmentation image
             for num in range(aug_time):
                 tmp = self.datagen.random_transform(img)
                 datas.append(tmp)
                 labels.append(label_dict[label])
+            img = cv2.LUT(img_src, self.lookUpTable)
+            img = img_src.astype(np.float32) / 255.0
+            datas.append(img)
+            labels.append(label_dict[label])
 
         datas = np.asarray(datas)
         labels = pd.DataFrame(labels)
@@ -94,7 +104,7 @@ if __name__=="__main__":
     model.summary()
 
     file_all = train_gen.length
-    steps = file_all / 4
+    steps = file_all / 5
 
     '''
     特徴ベクトル抽出
@@ -106,7 +116,7 @@ if __name__=="__main__":
     np.save('./models/features.npy', features)
     with open('./models/label.csv', 'w', encoding="utf8") as f:
         for idx in range(train_gen.length):
-            for n in range(4):
+            for n in range(5):
                 f.write('%d,%s\n'%(idx, train_gen.f_list[idx].split('/')[-2]))
 
     '''
@@ -124,7 +134,7 @@ if __name__=="__main__":
         g_hists.append([item[0] for item in g_hist])
         b_hists.append([item[0] for item in b_hist])
         # Augmentation image
-        for num in range(3):
+        for num in range(4):
             tmp = datagen.random_transform(img)
             r_hist = cv2.calcHist([tmp], [0], None, [256], [0,256])
             g_hist = cv2.calcHist([tmp], [1], None, [256], [0,256])

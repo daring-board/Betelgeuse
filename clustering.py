@@ -60,7 +60,7 @@ if __name__=="__main__":
     filename = './models/b_umap_model.sav'
     joblib.dump(reducer, filename)
 
-    reducer = umap.UMAP(n_neighbors=5, n_components=6, metric='cosine', random_state=10)
+    reducer = umap.UMAP(n_neighbors=5, n_components=8, metric='euclidean', random_state=10)
     features = reducer.fit_transform(features, y=l_list)
     # モデルを保存
     filename = './models/c_umap_model.sav'
