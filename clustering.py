@@ -13,6 +13,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from sklearn.ensemble import RandomForestClassifier as RFC
 from sklearn.ensemble import ExtraTreesClassifier as ETC
 from sklearn.ensemble import GradientBoostingClassifier as GBC
+from sklearn.linear_model import SGDClassifier
 from sklearn.svm import SVC, LinearSVC
 from sklearn.externals import joblib
 
@@ -40,27 +41,27 @@ if __name__=="__main__":
     l_list = np.asarray(l_list)
 
     r_hist = np.load('./models/r_hist.npy')
-    reducer = LDA(n_components=2)
+    reducer = LDA(n_components=3)
     r_hist = reducer.fit_transform(r_hist, y=l_list)
     # モデルを保存
     filename = './models/r_umap_model.sav'
     joblib.dump(reducer, filename)
 
     g_hist = np.load('./models/g_hist.npy')
-    reducer = LDA(n_components=2)
+    reducer = LDA(n_components=3)
     g_hist = reducer.fit_transform(g_hist, y=l_list)
     # モデルを保存
     filename = './models/g_umap_model.sav'
     joblib.dump(reducer, filename)
 
     b_hist = np.load('./models/b_hist.npy')
-    reducer = LDA(n_components=2)
+    reducer = LDA(n_components=3)
     b_hist = reducer.fit_transform(b_hist, y=l_list)
     # モデルを保存
     filename = './models/b_umap_model.sav'
     joblib.dump(reducer, filename)
 
-    reducer = umap.UMAP(n_neighbors=5, n_components=8, metric='euclidean', random_state=10)
+    reducer = umap.UMAP(n_neighbors=5, n_components=12, metric='cosine', random_state=10)
     features = reducer.fit_transform(features, y=l_list)
     # モデルを保存
     filename = './models/c_umap_model.sav'
@@ -74,7 +75,9 @@ if __name__=="__main__":
     np.save('./models/reduced_features.npy', features)
 
     # clf = hdbscan.HDBSCAN(min_cluster_size=5, prediction_data=True)
-    clf = GBC()
+    # clf = GBC()
+    clf = ETC()
+    # clf = RFC()
     clf.fit(features, l_list)
 
     # モデルを保存

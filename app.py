@@ -12,6 +12,7 @@ from keras.layers.core import Flatten
 from keras.layers import GlobalAveragePooling2D
 from keras.applications.xception import Xception
 from keras.applications.mobilenet import MobileNet
+from keras.applications.resnet50 import ResNet50
 
 from sklearn.externals import joblib
 
@@ -46,7 +47,7 @@ def classify_process():
     with graph1.as_default():
         shape = (224, 224, 3)
         input_tensor = Input(shape=shape)
-        base_model = MobileNet(weights='imagenet', include_top=False, input_tensor=input_tensor)
+        base_model = ResNet50(weights='imagenet', include_top=False, input_tensor=input_tensor)
         added_layer = GlobalAveragePooling2D()(base_model.output)
         model1 = Model(inputs=base_model.input, outputs=added_layer)
 
@@ -66,8 +67,12 @@ def root():
         files = {'FILE': (f.filename, open(f_path, 'rb'))}
         response = requests.post(app.config['MOBILENET_URL']+'/predict', files=files)
         pred1 = json.loads(response.content)['data']
+        print('Rigel')
+        print(pred1)
         pred2 = predict_core([f_path]).data.decode('utf-8')
         pred2 = json.loads(pred2)['data']
+        print('Betelguse')
+        print(pred2)
         result = make_result(pred1, pred2, [f_path])
 
         path = os.path.join(app.config['UPLOAD_FOLDER'], f.filename)
@@ -135,7 +140,7 @@ def predict_core(path_list):
     reduced_features = np.concatenate([features, r_hists, g_hists, b_hists], 1)
 
     pred = classifier.predict_proba(reduced_features)
-    print(pred)
+    # print(pred)
 
     return jsonify({
             'status': 'OK',
