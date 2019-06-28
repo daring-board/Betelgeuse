@@ -13,6 +13,8 @@ from mpl_toolkits.mplot3d import Axes3D
 from sklearn.ensemble import RandomForestClassifier as RFC
 from sklearn.ensemble import ExtraTreesClassifier as ETC
 from sklearn.ensemble import GradientBoostingClassifier as GBC
+from sklearn.linear_model import SGDClassifier
+from sklearn.svm import SVC, LinearSVC
 from sklearn.externals import joblib
 
 if __name__=="__main__":
@@ -38,51 +40,51 @@ if __name__=="__main__":
             f.write('%d,%d\n'%(idx, l_dict[data[idx][1]]))
     l_list = np.asarray(l_list)
 
-    reducer = umap.UMAP(n_neighbors=15, n_components=8, metric='euclidean', random_state=10)
-    features1 = reducer.fit_transform(features, y=l_list)
+    r_hist = np.load('./models/r_hist.npy')
+    reducer = LDA(n_components=3)
+    r_hist = reducer.fit_transform(r_hist, y=l_list)
     # モデルを保存
-    filename = './models/e_umap_model.sav'
+    filename = './models/r_umap_model.sav'
     joblib.dump(reducer, filename)
 
-    reducer = umap.UMAP(n_neighbors=15, n_components=8, metric='cosine', random_state=10)
-    features2 = reducer.fit_transform(features, y=l_list)
+    g_hist = np.load('./models/g_hist.npy')
+    reducer = LDA(n_components=3)
+    g_hist = reducer.fit_transform(g_hist, y=l_list)
+    # モデルを保存
+    filename = './models/g_umap_model.sav'
+    joblib.dump(reducer, filename)
+
+    b_hist = np.load('./models/b_hist.npy')
+    reducer = LDA(n_components=3)
+    b_hist = reducer.fit_transform(b_hist, y=l_list)
+    # モデルを保存
+    filename = './models/b_umap_model.sav'
+    joblib.dump(reducer, filename)
+
+    reducer = umap.UMAP(n_neighbors=5, n_components=12, metric='cosine', random_state=10)
+    features = reducer.fit_transform(features, y=l_list)
     # モデルを保存
     filename = './models/c_umap_model.sav'
     joblib.dump(reducer, filename)
 
-    # reducer = PCA(n_components=8)
-    # features3 = reducer.fit_transform(features)
-    # # モデルを保存
-    # filename = './models/pca_model.sav'
-    # joblib.dump(reducer, filename)
-
-    # reducer = LDA(n_components=8)
-    # features4 = reducer.fit_transform(features, l_list)
-    # モデルを保存
-    filename = './models/lda_model.sav'
-    joblib.dump(reducer, filename)
-
-    # features = np.concatenate([features1, features2, features3, features4], 1)
-    features = np.concatenate([features1, features2], 1)
+    features = np.concatenate([features, r_hist, g_hist, b_hist], 1)
 
     print(features)
     print(len(features))
 
     np.save('./models/reduced_features.npy', features)
 
-    clf = RFC(n_estimators=100, max_depth=3, random_state=0)
+    clf = GBC()
     # clf = ETC()
-    # clf = GBC(n_estimators=20)
+    # clf = RFC()
     clf.fit(features, l_list)
 
     # モデルを保存
     filename = './models/randumforest_model.sav'
     joblib.dump(clf, filename)
-    
-    pred = clf.predict(features)
-    for idx in range(len(pred)):
-        print(pred[idx], l_list[idx])
 
+    pred = clf.predict(features)
+ 
     prob = clf.predict_proba(features)
     for idx in range(len(prob)):
         print(pred[idx], prob[idx])

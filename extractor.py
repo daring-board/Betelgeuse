@@ -9,16 +9,16 @@ from keras.models import Sequential, Model
 from keras.layers import Input
 from keras.layers import GlobalAveragePooling2D, BatchNormalization
 from keras.layers.core import Dense, Dropout, Activation, Flatten
-from keras.applications.mobilenetv2 import MobileNetV2
-from keras.applications.vgg16 import VGG16
-from keras.applications.inception_resnet_v2 import InceptionResNetV2
+from keras.applications.xception import Xception
+from keras.applications.mobilenet import MobileNet
+from keras.applications.resnet50 import ResNet50
 from keras import optimizers
 
 from keras.preprocessing.image import ImageDataGenerator
 
 class DataSequence(Sequence):
     def __init__(self, data_path, label):
-        self.batch = 4
+        self.batch = 5
         self.data_file_path = data_path
         self.datagen = ImageDataGenerator(
                             rotation_range=30,
@@ -35,6 +35,11 @@ class DataSequence(Sequence):
         self.label = label
         self.length = len(self.f_list)
 
+        gamma = 0.5
+        self.lookUpTable = np.zeros((256, 1), dtype = 'uint8')
+        for i in range(256):
+            self.lookUpTable[i][0] = 255 * pow(float(i) / 255, 1.0 / gamma)
+
     def __getitem__(self, idx):
         warp = self.batch
         aug_time = 3
@@ -44,10 +49,20 @@ class DataSequence(Sequence):
         # for f in random.sample(self.f_list, warp):
         for f in self.f_list[warp * idx: warp * (idx+1)]:
             img = cv2.imread(f)
-            img = cv2.resize(img, (224, 224))
-            img = img.astype(np.float32) / 255.0
+            img_src = cv2.resize(img, (224, 224))
+            img = img_src.astype(np.float32) / 255.0
             datas.append(img)
             label = f.split('/')[2].split('_')[-1]
+            labels.append(label_dict[label])
+
+            # Augmentation image
+            for num in range(aug_time):
+                tmp = self.datagen.random_transform(img)
+                datas.append(tmp)
+                labels.append(label_dict[label])
+            img = cv2.LUT(img_src, self.lookUpTable)
+            img = img_src.astype(np.float32) / 255.0
+            datas.append(img)
             labels.append(label_dict[label])
 
         datas = np.asarray(datas)
@@ -69,7 +84,7 @@ if __name__=="__main__":
     '''
     学習済みモデルのロード(base_model)
     '''
-    base_model = InceptionResNetV2(weights='imagenet', include_top=False, input_tensor=input_tensor)
+    base_model = ResNet50(weights='imagenet', include_top=False, input_tensor=input_tensor)
 
     '''
     学習用画像のロード
@@ -84,13 +99,13 @@ if __name__=="__main__":
         count += 1
     train_gen = DataSequence('./train', label_dict)
 
-    added_layer = Flatten()(base_model.output)
+    added_layer = GlobalAveragePooling2D()(base_model.output)
     model = Model(inputs=base_model.input, outputs=added_layer)
 
     model.summary()
 
     file_all = train_gen.length
-    steps = file_all / 4
+    steps = file_all / 5
 
     '''
     特徴ベクトル抽出
@@ -102,4 +117,36 @@ if __name__=="__main__":
     np.save('./models/features.npy', features)
     with open('./models/label.csv', 'w', encoding="utf8") as f:
         for idx in range(train_gen.length):
-            f.write('%d,%s\n'%(idx, train_gen.f_list[idx].split('/')[-2]))
+            for n in range(5):
+                f.write('%d,%s\n'%(idx, train_gen.f_list[idx].split('/')[-2]))
+
+    '''
+    カラーヒストグラム抽出
+    '''
+    datagen = train_gen.datagen
+    r_hists, g_hists, b_hists = [], [], []
+    for f in train_gen.f_list:
+        img = cv2.imread(f)
+        img = cv2.resize(img, (224, 224))
+        r_hist = cv2.calcHist([img], [0], None, [256], [0,256])
+        g_hist = cv2.calcHist([img], [1], None, [256], [0,256])
+        b_hist = cv2.calcHist([img], [2], None, [256], [0,256])
+        r_hists.append([item[0] for item in r_hist])
+        g_hists.append([item[0] for item in g_hist])
+        b_hists.append([item[0] for item in b_hist])
+        # Augmentation image
+        for num in range(4):
+            tmp = datagen.random_transform(img)
+            r_hist = cv2.calcHist([tmp], [0], None, [256], [0,256])
+            g_hist = cv2.calcHist([tmp], [1], None, [256], [0,256])
+            b_hist = cv2.calcHist([tmp], [2], None, [256], [0,256])
+            r_hists.append([item[0] for item in r_hist])
+            g_hists.append([item[0] for item in g_hist])
+            b_hists.append([item[0] for item in b_hist])
+
+    r_hists = np.asarray(r_hists)
+    np.save('./models/r_hist.npy', r_hists)
+    g_hists = np.asarray(g_hists)
+    np.save('./models/g_hist.npy', g_hists)
+    b_hists = np.asarray(b_hists)
+    np.save('./models/b_hist.npy', b_hists)
