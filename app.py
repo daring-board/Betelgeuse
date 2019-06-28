@@ -47,7 +47,7 @@ def classify_process():
     with graph1.as_default():
         shape = (224, 224, 3)
         input_tensor = Input(shape=shape)
-        base_model = ResNet50(weights='imagenet', include_top=False, input_tensor=input_tensor)
+        base_model = MobileNet(weights='imagenet', include_top=False, input_tensor=input_tensor)
         added_layer = GlobalAveragePooling2D()(base_model.output)
         model1 = Model(inputs=base_model.input, outputs=added_layer)
 
