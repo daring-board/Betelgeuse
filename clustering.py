@@ -74,9 +74,8 @@ if __name__=="__main__":
 
     np.save('./models/reduced_features.npy', features)
 
-    # clf = hdbscan.HDBSCAN(min_cluster_size=5, prediction_data=True)
-    # clf = GBC()
-    clf = ETC()
+    clf = GBC()
+    # clf = ETC()
     # clf = RFC()
     clf.fit(features, l_list)
 
@@ -84,22 +83,7 @@ if __name__=="__main__":
     filename = './models/randumforest_model.sav'
     joblib.dump(clf, filename)
 
-    # pred = hdbscan.approximate_predict(clf, features)
     pred = clf.predict(features)
-    # ラベル変換
-    # filename = './models/convert_label.csv'
-    # con_label = {idx: -1 for idx in l_dict.values()}
-    # for idx in range(len(pred[0])):
-    #     if pred[0][idx] == -1: continue
-    #     if con_label[pred[0][idx]] != -1: continue 
-    #     con_label[pred[0][idx]] = l_list[idx]
-    # print(con_label)
-    # with open(filename, 'w', encoding='utf8') as f:
-    #     for key, value in con_label.items():
-    #         f.write('%d,%d\n'%(key, value))
-
-    # for idx in range(len(pred[0])):
-    #     print(l_list[idx], pred[0][idx], pred[1][idx])
  
     prob = clf.predict_proba(features)
     for idx in range(len(prob)):
